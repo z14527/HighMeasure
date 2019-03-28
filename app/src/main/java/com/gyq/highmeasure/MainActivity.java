@@ -1,5 +1,8 @@
 package com.gyq.highmeasure;
 
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -7,12 +10,18 @@ import android.hardware.SensorManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.preference.PreferenceManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Html;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
@@ -33,10 +42,14 @@ public class MainActivity extends AppCompatActivity {
     float ty1=0,ty2=0,ty3=0;
     int tap = 0;
     ArrayList<Float> ylist = new ArrayList<Float>();
+    private SharedPreferences pref;
+    private SharedPreferences.Editor editor;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        pref = PreferenceManager.getDefaultSharedPreferences(this);
         textView = (TextView)findViewById(R.id.text1);
         textView.setTextSize(30);
         textView.setOnTouchListener(new OnDoubleClickListener(new OnDoubleClickListener.DoubleClickCallback() {
@@ -86,8 +99,10 @@ public class MainActivity extends AppCompatActivity {
                             ty2= dy;
                             if(ylist.size()==1) {
                                 ylist.add(abs(ty2));
+                                String add_high = pref.getString("man_add_high_setting","3.0");
+                                float fadd = Float.valueOf(add_high);
                                 info = info + "<br/>第2次点击：y方位角=" + ty2;
-                                float h = (float) (3.0 * abs(Math.tan(ylist.get(0))) / abs(Math.tan(ylist.get(0)) - Math.tan(ylist.get(1))));
+                                float h = (float) (fadd * abs(Math.tan(ylist.get(0))) / abs(Math.tan(ylist.get(0)) - Math.tan(ylist.get(1))));
                                 float d = (float) (h / abs(Math.tan(ylist.get(0))));
                                 info = info + "<br/>方位角1="+ylist.get(0)+"<br/>方位角2="+ylist.get(1)+"<br/>高度=" + h + "<br/>距离=" + d;
                                 textView.setText(Html.fromHtml(info));
@@ -134,6 +149,56 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         sm.unregisterListener(sensorEventListener);
         super.onDestroy();
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.man_high_setting) {
+            //           Intent intent = new Intent(this,SettingActivity.class);
+            setPara("man_high_setting");
+        }
+        if (id == R.id.man_add_high_setting) {
+            //           Intent intent = new Intent(this,SettingActivity.class);
+            setPara("man_add_high_setting");
+        }
+        return super.onOptionsItemSelected(item);
+    }
+    private void setPara(final String para_name){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle("请输入 "+getString(getResources().getIdentifier(para_name,"string",getPackageName()))+" 参数值(cm)：");    //设置对话框标题
+        builder.setIcon(android.R.drawable.btn_star);   //设置对话框标题前的图标
+        final EditText edit = new EditText(MainActivity.this);
+        if(para_name.indexOf("add")>=0)
+            edit.setText(pref.getString(para_name,"3"));
+        else
+            edit.setText(pref.getString(para_name,"165"));
+        builder.setView(edit);
+        builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String data1 = edit.getText().toString();
+                editor = pref.edit();
+                editor.putString(para_name,data1);
+                editor.commit();
+            }
+        });
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Toast.makeText(MainActivity.this, "你选择了取消", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setCancelable(true);    //设置按钮是否可以按返回键取消,false则不可以取消
+        AlertDialog dialog = builder.create();  //创建对话框
+        dialog.setCanceledOnTouchOutside(true); //设置弹出框失去焦点是否隐藏,即点击屏蔽其它地方是否隐藏
+        dialog.show();
     }
 }
 class OnDoubleClickListener implements View.OnTouchListener{

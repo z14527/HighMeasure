@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">HighMeasure</string>
+    <string name="man_high_setting">人站立高度</string>
+    <string name="man_add_high_setting">人垫脚增加高度</string>
 </resources>

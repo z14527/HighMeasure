@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/man_high_setting"
+        android:orderInCategory="100"
+        android:title="@string/man_high_setting"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/man_add_high_setting"
+        android:orderInCategory="100"
+        android:title="@string/man_add_high_setting"
+        app:showAsAction="never"/>
+</menu>
