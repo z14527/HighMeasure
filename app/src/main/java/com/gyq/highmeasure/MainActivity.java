@@ -26,12 +26,18 @@ import android.widget.Toast;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import rorbin.q.radarview.RadarData;
+import rorbin.q.radarview.RadarView;
 
 import static java.lang.Math.abs;
 
 public class MainActivity extends AppCompatActivity {
     private SensorManager sm = null;
     TextView textView = null;
+    RadarView mRadarView = null;
     private float[] r = new float[9];
     //记录通过getOrientation()计算出来的方位横滚俯仰值
     private float[] values = new float[3];
@@ -39,9 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private float[] geomagnetic = null;
     SensorEventListener sensorEventListener = null;
     float dx = 0, dy = 0, dz = 0;
-    float ty1=0,ty2=0,ty3=0;
+    float ty1 = 0,ty2 = 0,ty3 = 0;
+    float tx1 = 0;
     int tap = 0;
     ArrayList<Float> ylist = new ArrayList<Float>();
+    ArrayList<Float> xlist = new ArrayList<Float>();
+    String info1 = "";
     private SharedPreferences pref;
     private SharedPreferences.Editor editor;
 
@@ -50,6 +59,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         pref = PreferenceManager.getDefaultSharedPreferences(this);
+        mRadarView = (RadarView)findViewById(R.id.radarView);
+        ArrayList<Float> rData = new ArrayList<Float>();
+        ArrayList<String> rLabel = new ArrayList<String>();
+        String fs24 = "子癸丑艮寅甲卯乙辰巽巳丙午丁未坤申庚酉辛戌乾亥壬";
+        for(int k=0;k<24;k++) {
+            rData.add((float) (k + 1));
+            rLabel.add(fs24.substring(k,k+1));
+        }
+        RadarData data = new RadarData(rData);
+        mRadarView.addData(data);
+        mRadarView.setVertexText(rLabel);
         textView = (TextView)findViewById(R.id.text1);
         textView.setTextSize(30);
         textView.setOnTouchListener(new OnDoubleClickListener(new OnDoubleClickListener.DoubleClickCallback() {
@@ -80,13 +100,37 @@ public class MainActivity extends AppCompatActivity {
                         SensorManager.getOrientation(r, values);
                         float dx1 = values[0];
                         if(abs(dx - dx1)>0.01) dx = dx1;
+                        if(tap>0){
+                            double dx2 = abs(dx) - Math.PI*15*(1+xlist.size())/180;
+                            if(abs(dx2) < 0.05 && xlist.size() <= 24){
+                                Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                                Ringtone rt = RingtoneManager.getRingtone(getApplicationContext(), uri);
+                                rt.play();
+                                tx1 = dx;
+                                xlist.add(tx1);
+                                dx2 = abs(dx) - Math.PI*15*(1+xlist.size())/180;
+                                if(dx2 < 0)
+                                    info1 = "---->";
+                                else
+                                    info1 = "<----";
+                            }
+                            if(xlist.size()>=24){
+                                String info = "";
+                                for(int k1 = 0;k1 < xlist.size();k1++)
+                                    info = info + xlist.get(k1) + "<br/>";
+                                textView.setText(Html.fromHtml(info));
+                                xlist.clear();
+                            }
+                        }
                         float dy1 = values[1];
                         if(abs(dy - dy1)>0.01) dy = dy1;
                         float dz1 = values[2];
                         if(abs(dz - dz1)>0.01) dz = dz1;
-                        String info = "x方位角＝" + dx + "<br/>y方位角=" + dy + "<br/>z方位角=" + dz;
+                        String info = info1 + "<br/> x方位角＝" + dx + "<br/>y方位角=" + dy + "<br/>z方位角=" + dz;
                         if(tap==1){
-                            ty1= dy;
+                            ty1 = dy;
+                            tx1 = dx;
+                            xlist.add(tx1);
                             if(ylist.size()==0) {
                                 ylist.add(abs(ty1));
                                 Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
